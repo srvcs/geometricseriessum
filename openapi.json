@@ -1,0 +1,145 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "srvcs-geometricseriessum",
+    "description": "",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [],
+        "summary": "`GET /` — service identity (srvcs service standard).",
+        "operationId": "index",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Info"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [],
+        "summary": "`POST /` — compute the sum of the first `n` terms of the geometric sequence\nwith starting term `first` and common `ratio`, delegating every arithmetic\nstep to the dependency primitives:",
+        "description": "- if `ratio == 1`, every term equals `first`, so the sum is `first * n`\n  (one `srvcs-multiply` call);\n- otherwise apply the closed form `first * (ratio^n - 1) / (ratio - 1)`:\n  1. `rn = ratio^n`         via `srvcs-power`;\n  2. `num = rn - 1`         via `srvcs-subtract`;\n  3. `num2 = first * num`   via `srvcs-multiply`;\n  4. `den = ratio - 1`      via `srvcs-subtract`;\n  5. `result = num2 / den`  via `srvcs-divide`.\n\nIf a dependency is unreachable it reports itself degraded (`503`); if a\ndependency rejects the input it forwards the `422`.",
+        "operationId": "evaluate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeometricSeriesSumResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "a dependency rejected the input (forwarded)"
+          },
+          "500": {
+            "description": "a dependency returned a malformed result"
+          },
+          "503": {
+            "description": "a dependency is unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EvalRequest": {
+        "type": "object",
+        "required": [
+          "first",
+          "ratio",
+          "n"
+        ],
+        "properties": {
+          "first": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "n": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ratio": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "GeometricSeriesSumResponse": {
+        "type": "object",
+        "required": [
+          "first",
+          "ratio",
+          "n",
+          "result"
+        ],
+        "properties": {
+          "first": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "n": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ratio": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "result": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "Info": {
+        "type": "object",
+        "required": [
+          "service",
+          "concern",
+          "depends_on"
+        ],
+        "properties": {
+          "concern": {
+            "type": "string"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "service": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
